@@ -39,6 +39,11 @@ class Actor
     @actor_addresses
   end
 
+  def send_first_message(text, address)
+    sending_message = Message.new(@port, address, text, Time.now)
+    send_message(sending_message)
+  end
+
 
   private
 
@@ -56,37 +61,26 @@ class Actor
     self.add_actor_address(message.sender) unless @received_messages[message.sender].length
   end
 
-  def send_message(received_message, address)
-    return if address == @port or !@actor_addresses.include? address
-
-    sending_message = Message.new(@port, address, received_message.text, Time.now)
-    return if @sent_messages[sending_message.receiver].include? sending_message
-
-    p "#{@port} sending #{received_message.text} to #{address} at #{sending_message.time_sent}"
+  def send_message(message)
+    p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
     Thread.new do
-      sock = TCPSocket.new 'localhost', sending_message.receiver
-      sock.puts sending_message.to_s
-      @sent_messages[sending_message.receiver] += [sending_message]
+      sock = TCPSocket.new 'localhost', message.receiver
+      sock.puts message.to_s
+      @sent_messages[message.receiver] += [message]
       sock.close
     end.join
   end
 
+  def send_message_wrapper(text, address)
+    return if address == @port or !@actor_addresses.include? address
+
+    sending_message = Message.new(@port, address, text, Time.now)
+    return if @sent_messages[sending_message.receiver].include? sending_message
+    send_message(sending_message)
+  end
+
   def tell_everyone(message)
-    @actor_addresses.each { |port| send_message(message, port) }
+    @actor_addresses.each { |port| send_message_wrapper(message.text, port) }
   end
 
 end
-
-
-$ports = [9000, 9001, 9002, 9003, 9004]
-$threads = []
-
-$ports.each do |port|
-  $threads << Thread.new do
-    actr = Actor.new(port)
-    actr.set_actor_addresses($ports)
-    actr.start_server
-  end
-end
-
-$threads.each { |thr| thr.join }
