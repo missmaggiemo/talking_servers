@@ -1,12 +1,16 @@
+require 'thread'
 require 'socket'
 require_relative './actor'
 
-$ports = [9000, 9001, 9002, 9003, 9004]
-$actors = []
+Thread.abort_on_exception = true
+
+$ports = [9000, 9001]
+$actors = Queue.new
 $threads = []
 
 $ports.each do |port|
   $threads << Thread.new do
+    sleep(1)
     actr = Actor.new(port)
     $actors << actr
     actr.actor_addresses.merge($ports)
@@ -15,7 +19,13 @@ $ports.each do |port|
 end
 
 $threads << Thread.new do
-  $actors[0].send_first_message('hi', 9001)
+  $ports.length.times do
+    receip = $actors.pop
+    if receip.port != 9001
+      receip.send_first_message('hi', 9001)
+      break
+    end
+  end
 end
 
 $threads.each { |thr| thr.join }

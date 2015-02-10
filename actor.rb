@@ -6,7 +6,7 @@ require_relative './message'
 
 class Actor
 
-  attr_reader :actor_addresses
+  attr_reader :actor_addresses, :port
 
   def initialize(port, actor_addresses=[port])
     @port = port
@@ -23,7 +23,7 @@ class Actor
       client = server.accept
       sender, text, time_sent = client.gets.chomp.split(':')
       message = Message.new(sender, @port, text, time_sent)
-      server_ack(message)
+      server_broadcast(message)
       client.close
     end
   end
@@ -33,17 +33,44 @@ class Actor
     send_message(sending_message)
   end
 
+  def start_sending_heartbeats
+    Thread.new do
+      loop do
+        self.actor_addresses.each do |address|
+          send_message(Message.new(@port, address, 'Beat', Time.now))
+        end
+        sleep(1)
+      end
+    end
+  end
+
+  def start_listening_for_heartbeats
+    server = TCPServer.new @port
+    Thread.new do
+      loop do
+        client = server.accept
+        sender, text, time_sent = client.gets.chomp.split(':')
+        p "#{@port} sees heartbeat from #{sender} at #{Time.now}"
+        client.close
+      end
+    end
+  end
+
 
   private
 
   def server_ack(message)
+    p "heartbeat #{self.port}"
+  end  
+
+  def server_broadcast(message)
     return if @received_messages[message.sender].include? message
 
-    receive_message(message)
+    process_message(message)
     tell_everyone(message)
   end
 
-  def receive_message(message)
+  def process_message(message)
     @mutex.synchronize do
       message.received!
       p "#{@port} received #{message.text} from #{message.sender} at #{message.time_received}"
@@ -54,7 +81,6 @@ class Actor
 
   def send_message(message)
     @mutex.synchronize do
-      return if @sent_messages[message.receiver].include? message
       return if message.receiver == @port or !@actor_addresses.include? message.receiver
 
       p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
