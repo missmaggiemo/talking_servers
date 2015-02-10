@@ -10,7 +10,7 @@ $ports.each do |port|
   $threads << Thread.new do
     actr = Actor.new(port)
     $actors << actr
-    actr.set_actor_addresses($ports)
+    actr.actor_addresses.merge($ports)
     actr.start_server
   end
 end
