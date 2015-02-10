@@ -1,3 +1,4 @@
+require 'thread'
 require 'socket'
 require 'set'
 require_relative './message'
@@ -12,6 +13,7 @@ class Actor
     @sent_messages = Hash.new { [] }
     @received_messages = Hash.new { [] }
     @actor_addresses = Set.new(actor_addresses)
+    @mutex = Mutex.new
   end
 
   def start_server
@@ -42,21 +44,25 @@ class Actor
   end
 
   def receive_message(message)
-    message.received!
-    p "#{@port} received #{message.text} from #{message.sender} at #{message.time_received}"
-    self.actor_addresses.add(message.sender)
-    @received_messages[message.sender] += [message]
+    @mutex.synchronize do
+      message.received!
+      p "#{@port} received #{message.text} from #{message.sender} at #{message.time_received}"
+      self.actor_addresses.add(message.sender)
+      @received_messages[message.sender] += [message]
+    end
   end
 
   def send_message(message)
-    return if message.receiver == @port or !@actor_addresses.include? message.receiver
-    return if @sent_messages[message.receiver].include? message
+    @mutex.synchronize do
+      return if @sent_messages[message.receiver].include? message
+      return if message.receiver == @port or !@actor_addresses.include? message.receiver
 
-    p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
-    sock = TCPSocket.new 'localhost', message.receiver
-    sock.puts message.to_s
-    @sent_messages[message.receiver] += [message]
-    sock.close
+      p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
+      sock = TCPSocket.new 'localhost', message.receiver
+      sock.puts message.to_s
+      @sent_messages[message.receiver] += [message]
+      sock.close
+    end
   end
 
   def tell_everyone(message)

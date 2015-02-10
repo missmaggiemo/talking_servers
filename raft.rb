@@ -1,7 +1,6 @@
 require 'socket'
 require_relative './actor'
 
-
 $ports = [9000, 9001, 9002, 9003, 9004]
 $actors = []
 $threads = []
