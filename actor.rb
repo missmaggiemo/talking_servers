@@ -1,101 +1,45 @@
 require 'thread'
 require 'socket'
-require 'set'
-require_relative './message'
-
 
 class Actor
 
-  attr_reader :actor_addresses, :port
+  attr_reader :port, :messages
 
-  def initialize(port, actor_addresses=[port])
+  def initialize(port)
     @port = port
-    @sent_messages = Hash.new { [] }
-    @received_messages = Hash.new { [] }
-    @actor_addresses = Set.new(actor_addresses)
-    @mutex = Mutex.new
+    @messages = Queue.new
   end
 
-  def start_server
-    p "Starting server on port #{@port}"
-    server = TCPServer.new @port
-    loop do
-      client = server.accept
-      sender, text, time_sent = client.gets.chomp.split(':')
-      message = Message.new(sender, @port, text, time_sent)
-      server_broadcast(message)
-      client.close
-    end
+  def start
+    self.start_listening
+    self.start_working
   end
 
-  def send_first_message(text, address)
-    sending_message = Message.new(@port, address, text, Time.now)
-    send_message(sending_message)
-  end
-
-  def start_sending_heartbeats
-    Thread.new do
-      loop do
-        self.actor_addresses.each do |address|
-          send_message(Message.new(@port, address, 'Beat', Time.now))
-        end
-        sleep(1)
-      end
-    end
-  end
-
-  def start_listening_for_heartbeats
+  def start_listening
     server = TCPServer.new @port
     Thread.new do
       loop do
         client = server.accept
-        sender, text, time_sent = client.gets.chomp.split(':')
-        p "#{@port} sees heartbeat from #{sender} at #{Time.now}"
-        client.close
+        @messages << client.gets.chomp
+        server.close
       end
     end
   end
 
-
-  private
-
-  def server_ack(message)
-    p "heartbeat #{self.port}"
-  end  
-
-  def server_broadcast(message)
-    return if @received_messages[message.sender].include? message
-
-    process_message(message)
-    tell_everyone(message)
-  end
-
-  def process_message(message)
-    @mutex.synchronize do
-      message.received!
-      p "#{@port} received #{message.text} from #{message.sender} at #{message.time_received}"
-      self.actor_addresses.add(message.sender)
-      @received_messages[message.sender] += [message]
+  def start_working
+    Thread.new do
+      message = @messages.shift
     end
   end
 
-  def send_message(message)
-    @mutex.synchronize do
-      return if message.receiver == @port or !@actor_addresses.include? message.receiver
-
-      p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
-      sock = TCPSocket.new 'localhost', message.receiver
-      sock.puts message.to_s
-      @sent_messages[message.receiver] += [message]
-      sock.close
-    end
-  end
-
-  def tell_everyone(message)
-    @actor_addresses.each do |port|
-      sending_message = Message.new(@port, port, message.text, Time.now)
-      send_message(sending_message)
-    end
+  def transition!(msg)
+    raise Error
   end
 
 end
+
+# need to respond to different messages, e.g. vote for master
+
+# transition map-- state, message?
+
+
