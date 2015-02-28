@@ -9,30 +9,24 @@ class Server < Actor
 
   attr_reader :server_addresses, :port
 
+  set_transition 'Beat', :send_ack!
+  set_transition 'SendHeartbeats', :send_heartbeats!
+
   def initialize(port, server_addresses=[port])
     super(port)
     @server_addresses = Set.new(server_addresses)
   end
 
-  def transition!(msg)
-    p "#{port} received #{msg.text} from #{msg.sender} at #{msg.time_received}"
-    if msg.text == 'Beat'
-      self.send_message!(
-        Message.new({sender: port, receiver: msg.sender, text: 'Ack'}))
-    elsif msg.text == 'Ack'
-      # Whatever Raft should do with an Ack.
-    elsif msg.text == 'SendHeartbeats'
-      self.send_heartbeats!
-    elsif msg.text == 'Master?'
-      # Whatever Raft should do with a request for master.
-    end
-  end
-
-  def send_heartbeats!
+  def send_heartbeats!(msg)
     self.server_addresses.each do |address|
       self.send_message!(Message.new(port, address, 'Beat', Time.now))
     end
     self.set_timer!(2, Message.new({sender: port, receiver: port, text: 'SendHeartbeats'}))
+  end
+
+  def send_ack!(msg)
+    self.send_message!(
+      Message.new({sender: port, receiver: msg.sender, text: 'Ack'}))
   end
 
   private

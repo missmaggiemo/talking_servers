@@ -34,7 +34,16 @@ class Actor
   end
 
   def transition!(msg)
-    raise Error
+    p "#{port} received #{msg.text} from #{msg.sender} at #{msg.time_received}"
+    self.send(self.events[msg.text], msg)
+  end
+
+  def self.events
+    @events ||= Hash.new
+  end
+
+  def self.set_transition(event_name, action_name)
+    self.events[event_name] = action_name
   end
 
   def send_message!(message)
