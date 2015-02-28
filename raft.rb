@@ -1,4 +1,4 @@
-require_relative './actor_server'
+require_relative './raft_actor'
 
 Thread.abort_on_exception = true
 
@@ -6,7 +6,7 @@ $ports = [9000, 9001, 9002]
 $servers = []
 
 $ports.each do |port|
-  srvr = Server.new(port, $ports)
+  srvr = RaftActor.new(port, $ports)
   srvr.start
   $servers << srvr # race condition
 end

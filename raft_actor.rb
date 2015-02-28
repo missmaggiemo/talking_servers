@@ -5,7 +5,7 @@ require_relative './message'
 require_relative './actor'
 
 
-class Server < Actor
+class RaftActor < Actor
 
   attr_reader :server_addresses, :port
 
