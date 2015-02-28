@@ -13,7 +13,7 @@ end
 
 p $ports
 p $servers
-$servers[0].send_heartbeats!
+$servers[0].request_vote!
 
 
 $servers.each { |srvr| srvr.join }
