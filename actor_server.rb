@@ -11,40 +11,27 @@ class Server < Actor
 
   set_transition 'Beat', :send_ack!
   set_transition 'SendHeartbeats', :send_heartbeats!
+  set_transition 'Ack', :receive_ack!
 
   def initialize(port, server_addresses=[port])
     super(port)
     @server_addresses = Set.new(server_addresses)
   end
 
-  def send_heartbeats!(msg)
+  def send_heartbeats!(msg=nil)
     self.server_addresses.each do |address|
       self.send_message!(Message.new(port, address, 'Beat', Time.now))
     end
-    self.set_timer!(2, Message.new({sender: port, receiver: port, text: 'SendHeartbeats'}))
+    self.set_timer!(2, Message.new(port, port, 'SendHeartbeats', Time.now))
   end
 
   def send_ack!(msg)
     self.send_message!(
-      Message.new({sender: port, receiver: msg.sender, text: 'Ack'}))
+      Message.new(port, msg.sender, 'Ack', Time.now))
   end
 
-  private
-
-  def server_ack(message)
-    p "heartbeat #{self.port}"
-  end  
-
-  def server_broadcast(message)
-    return if @received_messages[message.sender].include? message
-    tell_everyone(message)
-  end
-
-  def tell_everyone(message)
-    @server_addresses.each do |port|
-      sending_message = Message.new(@port, port, message.text, Time.now)
-      send_message(sending_message)
-    end
+  def receive_ack!(msg)
+    p "Received Ack!"
   end
 
 end

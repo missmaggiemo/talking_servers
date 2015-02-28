@@ -5,15 +5,16 @@ class Message
   attr_reader :time_received
   attr_accessor :sender, :receiver, :text, :time_sent
 
-  def initialize(options)
+  def initialize(sender, receiver, text, time_sent)
     self.sender, self.receiver, self.text, self.time_sent = 
-      options['sender'], options['receiver'], options['text'], options['time_sent']
+      sender, receiver, text, time_sent
 
     @time_received = nil
   end
 
-  def parse(str)
-    # class method to parse JSON, etc. and extract important info!
+  def self.parse(str)
+    msg_hash = JSON.parse(str)
+    self.new(msg_hash['sender'], msg_hash['receiver'], msg_hash['text'], msg_hash['time_sent'])
   end
 
 

@@ -9,11 +9,16 @@ class Actor
   def initialize(port)
     @port = port
     @messages = Queue.new
+    @threads = []
   end
 
   def start
-    self.start_listening
-    self.start_working
+    @threads << self.start_listening
+    @threads << self.start_working
+  end
+
+  def join
+    @threads.each { |thr| thr.join }
   end
 
   def start_listening
@@ -21,21 +26,24 @@ class Actor
     Thread.new do
       loop do
         client = tcp_server.accept
-        @messages << Message.new(JSON.parse(client.gets.chomp)).received!
-        tcp_server.close
+        @messages << Message.parse(client.gets.chomp).received!
+        client.close
       end
     end
   end
 
   def start_working
     Thread.new do
-      message = @messages.shift
+      loop do
+        message = @messages.shift
+        transition!(message)
+      end
     end
   end
 
   def transition!(msg)
     p "#{port} received #{msg.text} from #{msg.sender} at #{msg.time_received}"
-    self.send(self.events[msg.text], msg)
+    self.send(self.class.events[msg.text], msg)
   end
 
   def self.events
