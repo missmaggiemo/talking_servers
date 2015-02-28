@@ -71,8 +71,3 @@ class Actor
 
 end
 
-# need to respond to different messages, e.g. vote for master
-
-# transition map-- state, message?
-
-

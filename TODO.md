@@ -1,5 +1,6 @@
 # TODO
 
-Get heartbeat server running-- respond to messages, etc.
+Timer! Cancel a timer?
 
-Cancel a timer?
+Meaningful "raft" responses to messages, e.g. vote for master
+
