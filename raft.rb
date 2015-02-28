@@ -14,6 +14,7 @@ end
 p $ports
 p $servers
 $servers[0].request_vote!
+$servers[1].request_vote!
 
 
 $servers.each { |srvr| srvr.join }

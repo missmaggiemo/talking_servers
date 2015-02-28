@@ -3,23 +3,23 @@ require 'json'
 class Message
 
   attr_reader :time_received
-  attr_accessor :sender, :receiver, :text, :time_sent
+  attr_accessor :sender, :receiver, :text, :data, :time_sent
 
-  def initialize(sender, receiver, text, time_sent)
-    self.sender, self.receiver, self.text, self.time_sent = 
-      sender, receiver, text, time_sent
+  def initialize(sender, receiver, text, data={}, time_sent=Time.now)
+    self.sender, self.receiver, self.text, self.data, self.time_sent =
+      sender, receiver, text, data, time_sent
 
     @time_received = nil
   end
 
   def self.parse(str)
     msg_hash = JSON.parse(str)
-    self.new(msg_hash['sender'], msg_hash['receiver'], msg_hash['text'], msg_hash['time_sent'])
+    self.new(msg_hash['sender'], msg_hash['receiver'], msg_hash['text'], msg_hash['data'], msg_hash['time_sent'])
   end
 
 
   def to_json
-    {sender: sender, receiver: receiver, text: text, time_sent: time_sent}.to_json
+    {sender: sender, receiver: receiver, text: text, data: data, time_sent: time_sent}.to_json
   end
 
   def ==(msg)
