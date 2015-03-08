@@ -18,7 +18,6 @@ Logger.log $ports
 Logger.log $servers
 sleep(1)  # give servers time to start-- this is a hack
 $servers[0].messages << Message.new(9000, 9000, 'StartElection').received!
-$servers[1].messages << Message.new(9001, 9001, 'StartElection').received!
 
 $servers.each { |srvr| srvr.join }
 

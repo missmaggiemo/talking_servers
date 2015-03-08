@@ -8,7 +8,7 @@ require_relative './logger'
 
 class RaftActor < Actor
 
-  attr_reader :server_addresses, :port
+  attr_reader :server_addresses, :port, :state
 
   set_transition 'SendHeartbeats', :send_heartbeats!
   set_transition 'Vote', :receive_vote!
@@ -18,8 +18,7 @@ class RaftActor < Actor
   def initialize(port, server_addresses=[port])
     super(port)
     @server_addresses = Set.new(server_addresses)
-    @num_votes = 0
-    @round = 0
+    @state = {name: 'follower', round: 0}
   end
 
   def send_heartbeats!(msg=nil)
@@ -31,30 +30,30 @@ class RaftActor < Actor
   end
 
   def request_vote!(msg=nil)
-    @round += 1
+    @state = {name: 'requested_vote', round: state[:round] + 1, num_votes: 1}
     self.server_addresses.each do |address|
       next if address == port
-      self.send_message!(Message.new(port, address, 'RequestVote', {round: @round}))
+      self.send_message!(Message.new(port, address, 'RequestVote', {round: state[:round]}))
     end
-    @num_votes = 1
   end
 
   def receive_vote!(msg)
     Logger.log "Vote received!"
-    @num_votes += 1
-    if @num_votes >= (@server_addresses.length / 2) + 1
-      # We should only get elected once... Check here.
+    return unless state[:name] == 'requested_vote' and state[:round] == msg.data['round']
+    @state[:num_votes] += 1
+    if state[:num_votes] >= (@server_addresses.length / 2) + 1
+      @state = {name: 'master', round: state[:round]}
       Logger.log "#{port} elected master!"
       send_heartbeats!
     end
   end
 
   def receive_vote_request!(msg)
-    Logger.log "#{port} Our round: #{@round}, Data round: #{msg.data['round']}"
-    if @round < msg.data['round']
+    Logger.log "#{port} Our round: #{state[:round]}, Data round: #{msg.data['round']}"
+    if state[:round] < msg.data['round']
       self.send_message!(
-        Message.new(port, msg.sender, 'Vote'))
-      @round = msg.data['round']
+        Message.new(port, msg.sender, 'Vote', {round: msg.data['round']}))
+      @state = {name: 'follower', round: msg.data['round']}
     else
       Logger.log "Ignoring (old) vote request"
     end
