@@ -21,7 +21,9 @@ class RaftActor < Actor
     @state = {name: 'follower', round: 0}
   end
 
-  def send_heartbeats!(msg=nil)
+  def send_heartbeats!(msg)
+    return unless msg.data[:timer] == timers[msg.text]
+
     self.server_addresses.each do |address|
       next if address == port
       self.send_message!(Message.new(port, address, 'Beat'))
@@ -44,7 +46,7 @@ class RaftActor < Actor
     if state[:num_votes] >= (@server_addresses.length / 2) + 1
       @state = {name: 'master', round: state[:round]}
       Logger.log "#{port} elected master!"
-      send_heartbeats!
+      set_timer!(0, Message.new(port, port, 'SendHeartbeats'))
     end
   end
 

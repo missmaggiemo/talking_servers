@@ -5,12 +5,13 @@ require_relative './logger'
 
 class Actor
 
-  attr_reader :port, :messages
+  attr_reader :port, :messages, :timers
 
   def initialize(port)
     @port = port
     @messages = Queue.new
     @threads = []
+    @timers = Hash.new 0
   end
 
   def start
@@ -69,10 +70,16 @@ class Actor
 
   def set_timer!(wait_time, msg)
     # wait_time is an integer of seconds to wait, msg is a message object to send if timer ends
+    expire_timer(msg.text)
+    msg.data[:timer] = timers[msg.text]
     Thread.new do
       sleep(wait_time)
       @messages << msg.sent!.received!
     end
+  end
+
+  def expire_timer(name)
+    timers[name] += 1
   end
 
 end
