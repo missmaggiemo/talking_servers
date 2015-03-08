@@ -1,6 +1,7 @@
 require 'thread'
 require 'socket'
 require_relative './message'
+require_relative './logger'
 
 class Actor
 
@@ -42,7 +43,11 @@ class Actor
   end
 
   def transition!(msg)
-    p "#{port} received #{msg.text} from #{msg.sender} at #{msg.time_received}"
+    Logger.log "#{port} received #{msg.text} from #{msg.sender} at #{msg.time_received}"
+    unless self.class.events[msg.text]
+      Logger.log "Ignore event #{msg.text}!"
+      return
+    end
     self.send(self.class.events[msg.text], msg)
   end
 
@@ -55,10 +60,11 @@ class Actor
   end
 
   def send_message!(message)
+    sleep(rand() * 0.3)
     sock = TCPSocket.new 'localhost', message.receiver
     sock.puts message.sent!.to_json
     sock.close
-    p "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
+    Logger.log "#{@port} sending #{message.text} to #{message.receiver} at #{message.time_sent}"
   end
 
   def set_timer!(wait_time, msg)
