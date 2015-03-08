@@ -14,6 +14,7 @@ class RaftActor < Actor
   set_transition 'Vote', :receive_vote!
   set_transition 'RequestVote', :receive_vote_request!
   set_transition 'StartElection', :request_vote!
+  set_transition 'Beat', :receive_beat!
 
   def initialize(port, server_addresses=[port])
     super(port)
@@ -26,13 +27,25 @@ class RaftActor < Actor
 
     self.server_addresses.each do |address|
       next if address == port
-      self.send_message!(Message.new(port, address, 'Beat'))
+      self.send_message!(Message.new(port, address, 'Beat', {round: state[:round]}))
     end
     self.set_timer!(2, Message.new(port, port, 'SendHeartbeats'))
   end
 
-  def request_vote!(msg=nil)
+  def receive_beat!(msg)
+    return unless msg.data['round'] >= state[:round]
+    @state = {name: 'follower', round: msg.data['round']}
+    expire_timer!('SendHeartbeats')
+    set_timer!(4, Message.new(port, port, 'StartElection'))
+  end
+
+  def request_vote!(msg)
+    return unless msg.data[:timer] == timers[msg.text]
+
     @state = {name: 'requested_vote', round: state[:round] + 1, num_votes: 1}
+    expire_timer!('SendHeartbeats')
+    set_timer!(4, Message.new(port, port, 'StartElection'))
+
     self.server_addresses.each do |address|
       next if address == port
       self.send_message!(Message.new(port, address, 'RequestVote', {round: state[:round]}))
@@ -42,10 +55,12 @@ class RaftActor < Actor
   def receive_vote!(msg)
     Logger.log "Vote received!"
     return unless state[:name] == 'requested_vote' and state[:round] == msg.data['round']
+
     @state[:num_votes] += 1
     if state[:num_votes] >= (@server_addresses.length / 2) + 1
       @state = {name: 'master', round: state[:round]}
       Logger.log "#{port} elected master!"
+      expire_timer!('StartElection')
       set_timer!(0, Message.new(port, port, 'SendHeartbeats'))
     end
   end
@@ -56,6 +71,8 @@ class RaftActor < Actor
       self.send_message!(
         Message.new(port, msg.sender, 'Vote', {round: msg.data['round']}))
       @state = {name: 'follower', round: msg.data['round']}
+      expire_timer!('SendHeartbeats')
+      set_timer!(4, Message.new(port, port, 'StartElection'))
     else
       Logger.log "Ignoring (old) vote request"
     end

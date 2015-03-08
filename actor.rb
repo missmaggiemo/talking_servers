@@ -70,7 +70,7 @@ class Actor
 
   def set_timer!(wait_time, msg)
     # wait_time is an integer of seconds to wait, msg is a message object to send if timer ends
-    expire_timer(msg.text)
+    expire_timer!(msg.text)
     msg.data[:timer] = timers[msg.text]
     Thread.new do
       sleep(wait_time)
@@ -78,7 +78,8 @@ class Actor
     end
   end
 
-  def expire_timer(name)
+  def expire_timer!(name)
+    Logger.log "#{port} expired timer #{name}"
     timers[name] += 1
   end
 
