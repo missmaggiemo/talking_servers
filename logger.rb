@@ -11,7 +11,7 @@ class Logger
   def self.start
     Thread.new do
       loop do
-        p @msg_queue.shift
+        puts @msg_queue.shift
       end
     end
   end
