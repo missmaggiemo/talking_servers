@@ -13,13 +13,25 @@ class Message
   end
 
   def self.parse(str)
-    msg_hash = JSON.parse(str)
-    self.new(msg_hash['sender'], msg_hash['receiver'], msg_hash['text'], msg_hash['data'], msg_hash['time_sent'])
+    msg_hash = JSON.parse(str, symbolize_names: true)
+    self.new(
+      msg_hash[:sender],
+      msg_hash[:receiver],
+      msg_hash[:text],
+      msg_hash[:data],
+      msg_hash[:time_sent]
+    )
   end
 
 
   def to_json
-    {sender: sender, receiver: receiver, text: text, data: data, time_sent: time_sent}.to_json
+    {
+      sender: sender,
+      receiver: receiver,
+      text: text,
+      data: data,
+      time_sent: time_sent
+    }.to_json
   end
 
   def ==(msg)
@@ -39,5 +51,4 @@ class Message
     @time_sent = Time.now
     return self
   end
-
 end

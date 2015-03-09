@@ -84,4 +84,3 @@ class Actor
   end
 
 end
-

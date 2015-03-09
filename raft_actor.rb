@@ -19,7 +19,7 @@ class RaftActor < Actor
   def initialize(port, server_addresses=[port])
     super(port)
     @server_addresses = Set.new(server_addresses)
-    @state = {name: 'follower', round: 0}
+    @state = {name: :follower, round: 0}
   end
 
   def send_heartbeats!(msg)
@@ -33,8 +33,8 @@ class RaftActor < Actor
   end
 
   def receive_beat!(msg)
-    return unless msg.data['round'] >= state[:round]
-    @state = {name: 'follower', round: msg.data['round']}
+    return unless msg.data[:round] >= state[:round]
+    @state = {name: :follower, round: msg.data[:round]}
     expire_timer!('SendHeartbeats')
     set_timer!(4, Message.new(port, port, 'StartElection'))
   end
@@ -42,7 +42,7 @@ class RaftActor < Actor
   def request_vote!(msg)
     return unless msg.data[:timer] == timers[msg.text]
 
-    @state = {name: 'requested_vote', round: state[:round] + 1, num_votes: 1}
+    @state = {name: :requested_vote, round: state[:round] + 1, num_votes: 1}
     expire_timer!('SendHeartbeats')
     set_timer!(4, Message.new(port, port, 'StartElection'))
 
@@ -54,11 +54,11 @@ class RaftActor < Actor
 
   def receive_vote!(msg)
     Logger.log "Vote received!"
-    return unless state[:name] == 'requested_vote' and state[:round] == msg.data['round']
+    return unless state[:name] == :requested_vote and state[:round] == msg.data[:round]
 
     @state[:num_votes] += 1
     if state[:num_votes] >= (@server_addresses.length / 2) + 1
-      @state = {name: 'master', round: state[:round]}
+      @state = {name: :master, round: state[:round]}
       Logger.log "#{port} elected master!"
       expire_timer!('StartElection')
       set_timer!(0, Message.new(port, port, 'SendHeartbeats'))
@@ -66,11 +66,11 @@ class RaftActor < Actor
   end
 
   def receive_vote_request!(msg)
-    Logger.log "#{port} Our round: #{state[:round]}, Data round: #{msg.data['round']}"
-    if state[:round] < msg.data['round']
+    Logger.log "#{port} Our round: #{state[:round]}, Data round: #{msg.data[:round]}"
+    if state[:round] < msg.data[:round]
       self.send_message!(
-        Message.new(port, msg.sender, 'Vote', {round: msg.data['round']}))
-      @state = {name: 'follower', round: msg.data['round']}
+        Message.new(port, msg.sender, 'Vote', {round: msg.data[:round]}))
+      @state = {name: :follower, round: msg.data[:round]}
       expire_timer!('SendHeartbeats')
       set_timer!(4, Message.new(port, port, 'StartElection'))
     else
