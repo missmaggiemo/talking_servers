@@ -45,14 +45,14 @@ class Actor
 
   def transition!(msg)
     if !self.class.events[msg.text]
-      # Logger.log "#{port}: Ignore event #{msg.text}!"
+      # Logger.log(port, "Ignore event #{msg.text}!")
       return
     elsif self.timers.has_key?(msg.text) && self.timers[msg.text] != msg.data[:timer]
-      # Logger.log "#{port}: Ignoring expired #{msg.text} timer"
+      # Logger.log(port, "Ignoring expired #{msg.text} timer")
       return
     end
 
-    Logger.log "#{port}: received #{msg.text} from #{msg.sender}"
+    Logger.log(port, "received #{msg.text} from #{msg.sender}")
     self.send(self.class.events[msg.text], msg)
   end
 
@@ -69,7 +69,7 @@ class Actor
     sock = TCPSocket.new 'localhost', message.receiver
     sock.puts message.sent!.to_json
     sock.close
-    # Logger.log "#{@port}: sending #{message.text} to #{message.receiver} at #{message.time_sent}"
+    # Logger.log(port, sending #{message.text} to #{message.receiver} at #{message.time_sent}")
   end
 
   def set_timer!(wait_time, msg)
@@ -83,7 +83,7 @@ class Actor
   end
 
   def expire_timer!(name)
-    # Logger.log "#{port}: expired timer #{name}"
+    # Logger.log(port, "expired timer #{name}")
     timers[name] += 1
   end
 

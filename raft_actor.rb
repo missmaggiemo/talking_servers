@@ -54,7 +54,7 @@ class RaftActor < Actor
     @state[:num_votes] += 1
     if state[:num_votes] >= (@server_addresses.length / 2) + 1
       @state = {name: :master, round: state[:round]}
-      Logger.log "#{port}: I was elected master!"
+      Logger.log(port, "I was elected master!")
       expire_timer!('StartElection')
       set_timer!(0, Message.new(port, port, 'SendHeartbeats'))
     end
@@ -68,7 +68,7 @@ class RaftActor < Actor
       expire_timer!('SendHeartbeats')
       set_timer!(4, Message.new(port, port, 'StartElection'))
     else
-      # Logger.log "Ignoring (old) vote request"
+      # Logger.log(port, "Ignoring (old) vote request")
     end
   end
 

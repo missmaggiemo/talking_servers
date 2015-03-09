@@ -4,8 +4,8 @@ class Logger
 
   @msg_queue = Queue.new
 
-  def self.log(msg)
-    @msg_queue << msg
+  def self.log(port, msg)
+    @msg_queue << "#{port}: #{msg}"
   end
 
   def self.start
