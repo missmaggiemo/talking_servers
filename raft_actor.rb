@@ -49,20 +49,18 @@ class RaftActor < Actor
   end
 
   def receive_vote!(msg)
-    Logger.log "Vote received!"
     return unless state[:name] == :requested_vote and state[:round] == msg.data[:round]
 
     @state[:num_votes] += 1
     if state[:num_votes] >= (@server_addresses.length / 2) + 1
       @state = {name: :master, round: state[:round]}
-      Logger.log "#{port} elected master!"
+      Logger.log "#{port}: I was elected master!"
       expire_timer!('StartElection')
       set_timer!(0, Message.new(port, port, 'SendHeartbeats'))
     end
   end
 
   def receive_vote_request!(msg)
-    Logger.log "#{port} Our round: #{state[:round]}, Data round: #{msg.data[:round]}"
     if state[:round] < msg.data[:round]
       self.send_message!(
         Message.new(port, msg.sender, 'Vote', {round: msg.data[:round]}))
@@ -70,7 +68,7 @@ class RaftActor < Actor
       expire_timer!('SendHeartbeats')
       set_timer!(4, Message.new(port, port, 'StartElection'))
     else
-      Logger.log "Ignoring (old) vote request"
+      # Logger.log "Ignoring (old) vote request"
     end
   end
 
