@@ -23,8 +23,6 @@ class RaftActor < Actor
   end
 
   def send_heartbeats!(msg)
-    return unless msg.data[:timer] == timers[msg.text]
-
     self.server_addresses.each do |address|
       next if address == port
       self.send_message!(Message.new(port, address, 'Beat', {round: state[:round]}))
@@ -40,8 +38,6 @@ class RaftActor < Actor
   end
 
   def request_vote!(msg)
-    return unless msg.data[:timer] == timers[msg.text]
-
     @state = {name: :requested_vote, round: state[:round] + 1, num_votes: 1}
     expire_timer!('SendHeartbeats')
     set_timer!(4, Message.new(port, port, 'StartElection'))
