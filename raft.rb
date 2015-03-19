@@ -14,8 +14,6 @@ $ports.each do |port|
   $servers << srvr
 end
 
-Logger.log $ports
-Logger.log $servers
 sleep(1)  # give servers time to start-- this is a hack
 $servers[0].set_timer!(0, Message.new(9000, 9000, 'StartElection'))
 
@@ -26,5 +24,3 @@ loop do
 end
 
 $servers.each { |srvr| srvr.join }
-
-
