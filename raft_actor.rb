@@ -8,18 +8,17 @@ require_relative './logger'
 
 class RaftActor < Actor
 
-  attr_reader :server_addresses, :port, :state
+  attr_reader :server_addresses
 
-  set_transition 'SendHeartbeats', :send_heartbeats!
+  set_transition 'SendHeartbeats', :send_heartbeats!, :master
   set_transition 'Vote', :receive_vote!
-  set_transition 'RequestVote', :receive_vote_request!
-  set_transition 'StartElection', :request_vote!
+  set_transition 'RequestVote', :receive_vote_request!, :follower
+  set_transition 'StartElection', :request_vote!, :follower
   set_transition 'Beat', :receive_beat!
 
   def initialize(port, server_addresses=[port])
-    super(port)
+    super(port, {name: :follower, round: 0})
     @server_addresses = Set.new(server_addresses)
-    @state = {name: :follower, round: 0}
   end
 
   def send_heartbeats!(msg)
