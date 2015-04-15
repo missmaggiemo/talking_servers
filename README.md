@@ -1,3 +1,9 @@
 # talking_servers
 
-I think this might eventually be an implementation of Raft. But right now, it's just talking servers.
+How to run this code:
+
+0. Clone the repo.
+
+0. `cd this_file && ruby raft.rb`
+
+    * Optionally `ruby raft.rb --ports list,of,ports`

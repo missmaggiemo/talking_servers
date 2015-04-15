@@ -24,6 +24,9 @@ class Actor
   end
 
   def start_listening
+    """
+    Start listening for messages on the port that the actor was initialized on.
+    """
     tcp_server = TCPServer.new @port
     Thread.new do
       loop do
@@ -35,6 +38,9 @@ class Actor
   end
 
   def start_working
+    """
+    Receive a message and react accordingly.
+    """
     Thread.new do
       loop do
         message = @messages.shift
@@ -44,11 +50,14 @@ class Actor
   end
 
   def transition!(msg)
+    """
+    React to a message, msg, if we've set a transition; ignore the event if we haven't set a
+    transition. Also ignore expired events, and raise an error if the actor isn't in the right
+    state for that event.
+    """
     if !self.class.events[msg.text]
-      # Logger.log(port, "Ignore event #{msg.text}!")
       return
     elsif self.timers.has_key?(msg.text) && self.timers[msg.text] != msg.data[:timer]
-      # Logger.log(port, "Ignoring expired #{msg.text} timer")
       return
     end
 
@@ -69,6 +78,10 @@ class Actor
   end
 
   def self.set_transition(event_name, action_name, state_name=nil)
+    """
+    Set a transition method, action_name, for a given event, event_name. Optionally, set a required
+    state for that event.
+    """
     self.events[event_name] = action_name
     self.event_states[event_name] = state_name
   end
@@ -78,11 +91,12 @@ class Actor
     sock = TCPSocket.new 'localhost', message.receiver
     sock.puts message.sent!.to_json
     sock.close
-    # Logger.log(port, sending #{message.text} to #{message.receiver} at #{message.time_sent}")
   end
 
   def set_timer!(wait_time, msg)
-    # wait_time is an integer of seconds to wait, msg is a message object to send if timer ends
+    """
+    Set a wait time, wait_time, of seconds to wait before sending a particular message.
+    """
     expire_timer!(msg.text)
     msg.data[:timer] = timers[msg.text]
     Thread.new do
@@ -92,7 +106,6 @@ class Actor
   end
 
   def expire_timer!(name)
-    # Logger.log(port, "expired timer #{name}")
     timers[name] += 1
   end
 
