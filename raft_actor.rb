@@ -22,6 +22,9 @@ class RaftActor < Actor
   end
 
   def send_heartbeats!(msg)
+    """
+    Send a heartbeat to every port on our list of ports.
+    """
     self.server_addresses.each do |address|
       next if address == port
       self.send_message!(Message.new(port, address, 'Beat', {round: state[:round]}))
@@ -30,6 +33,10 @@ class RaftActor < Actor
   end
 
   def receive_beat!(msg)
+    """
+    Receive a heartbeat from the master node. Ignore beat if our round is more recent that the
+    round from the message, msg.
+    """
     return unless msg.data[:round] >= state[:round]
     @state = {name: :follower, round: msg.data[:round]}
     expire_timer!('SendHeartbeats')
@@ -37,6 +44,9 @@ class RaftActor < Actor
   end
 
   def request_vote!(msg)
+    """
+    Request a vote for master state and increment our round.
+    """
     @state = {name: :requested_vote, round: state[:round] + 1, num_votes: 1}
     expire_timer!('SendHeartbeats')
     set_timer!(4, Message.new(port, port, 'StartElection'))
@@ -48,6 +58,9 @@ class RaftActor < Actor
   end
 
   def receive_vote!(msg)
+    """
+    Receive a vote if our round matches the round in message, msg. Otherwise, do nothing.
+    """
     return unless state[:name] == :requested_vote and state[:round] == msg.data[:round]
 
     @state[:num_votes] += 1
@@ -60,14 +73,15 @@ class RaftActor < Actor
   end
 
   def receive_vote_request!(msg)
+    """
+    Vote for a new leader if our round is out of date. Otherwise, ignore the message, msg.
+    """
     if state[:round] < msg.data[:round]
       self.send_message!(
         Message.new(port, msg.sender, 'Vote', {round: msg.data[:round]}))
       @state = {name: :follower, round: msg.data[:round]}
       expire_timer!('SendHeartbeats')
       set_timer!(4, Message.new(port, port, 'StartElection'))
-    else
-      # Logger.log(port, "Ignoring (old) vote request")
     end
   end
 
