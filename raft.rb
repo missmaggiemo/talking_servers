@@ -1,11 +1,22 @@
+require 'optparse'
 require_relative './message'
 require_relative './raft_actor'
 require_relative './logger'
 
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: ./raft.rb [options]"
+  opts.on('-p', '--ports PORTS', 'Comma-separarted list of ports') do |v|
+    options[:ports] = v.split(',')
+  end
+end.parse!
+
+
 Thread.abort_on_exception = true
 Logger.start
 
-$ports = [9000, 9001, 9002]
+$ports = options[:ports] ? options[:ports] : [9000, 9001, 9002]
+first_port = $ports[0]
 $servers = []
 
 $ports.each do |port|
@@ -15,7 +26,7 @@ $ports.each do |port|
 end
 
 sleep(1)  # give servers time to start-- this is a hack
-$servers[0].set_timer!(0, Message.new(9000, 9000, 'StartElection'))
+$servers[0].set_timer!(0, Message.new(first_port, first_port, 'StartElection'))
 
 # testing the ability to kill a master
 loop do
