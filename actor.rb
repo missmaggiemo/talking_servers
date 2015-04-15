@@ -5,10 +5,10 @@ require_relative './logger'
 
 class Actor
 
-  attr_reader :port, :messages, :timers
+  attr_reader :port, :state, :messages, :timers
 
-  def initialize(port)
-    @port = port
+  def initialize(port, state)
+    @port, @state = port, state
     @messages = Queue.new
     @threads = []
     @timers = Hash.new 0
@@ -53,6 +53,10 @@ class Actor
     end
 
     Logger.log(port, "received #{msg.text} from #{msg.sender}")
+
+    unless self.class.event_states[msg.text].nil? or @state[:name] == self.class.event_states[msg.text]
+      raise "Incorrect State"
+    end
     self.send(self.class.events[msg.text], msg)
   end
 
@@ -60,8 +64,13 @@ class Actor
     @events ||= Hash.new
   end
 
-  def self.set_transition(event_name, action_name)
+  def self.event_states
+    @event_states ||= Hash.new
+  end
+
+  def self.set_transition(event_name, action_name, state_name=nil)
     self.events[event_name] = action_name
+    self.event_states[event_name] = state_name
   end
 
   def send_message!(message)
