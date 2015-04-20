@@ -8,6 +8,10 @@ class Logger
     @msg_queue << "#{port}: #{msg}"
   end
 
+  def self.error(port, error, info)
+    @msg_queue << "Error at #{port}: #{error}, #{info}"
+  end
+
   def self.start
     Thread.new do
       loop do

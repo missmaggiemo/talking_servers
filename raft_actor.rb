@@ -11,8 +11,8 @@ class RaftActor < Actor
   attr_reader :server_addresses
 
   set_transition 'SendHeartbeats', :send_heartbeats!, :master
-  set_transition 'Vote', :receive_vote!
-  set_transition 'RequestVote', :receive_vote_request!, :follower
+  set_transition 'Vote', :receive_vote!, :requested_vote
+  set_transition 'RequestVote', :receive_vote_request!
   set_transition 'StartElection', :request_vote!, :follower
   set_transition 'Beat', :receive_beat!
 

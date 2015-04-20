@@ -15,7 +15,7 @@ end.parse!
 Thread.abort_on_exception = true
 Logger.start
 
-$ports = options[:ports] ? options[:ports] : [9000, 9001, 9002]
+$ports = options[:ports] ? options[:ports] : [9000, 9001, 9002, 9003, 9004]
 first_port = $ports[0]
 $servers = []
 

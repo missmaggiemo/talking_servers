@@ -62,9 +62,9 @@ class Actor
     end
 
     Logger.log(port, "received #{msg.text} from #{msg.sender}")
-
     unless self.class.event_states[msg.text].nil? or @state[:name] == self.class.event_states[msg.text]
-      raise "Incorrect State"
+      Logger.error(port, "Incorrect State", {event: msg.text, required: self.class.event_states[msg.text], current: @state[:name]})
+      return
     end
     self.send(self.class.events[msg.text], msg)
   end
